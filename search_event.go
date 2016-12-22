@@ -41,11 +41,11 @@ type EventSearchEntity struct {
 }
 
 type EventSearchEntityMetadata struct {
-	Instance                string `json:"instance"`
-	Index                   int    `json:"index"`
-	ExitDescription         string `json:"exit_description"`
-	Reason                  string `json:"reason"`
-	Request     ESEMetadataRequest `json:"request"`
+	Instance                string `json:"instance,omitempty"`
+	Index                   int    `json:"index,omitempty"`
+	ExitDescription         string `json:"exit_description,omitempty"`
+	Reason                  string `json:"reason,omitempty"`
+	Request     ESEMetadataRequest `json:"request,omitempty"`
 }
 
 type ESEMetadataRequest struct {
