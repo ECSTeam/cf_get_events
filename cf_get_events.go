@@ -24,14 +24,14 @@ func (c *Events) GetMetadata() plugin.PluginMetadata {
 		Version: plugin.VersionType{
 			Major: 0,
 			Minor: 5,
-			Build: 0,
+			Build: 20161227,
 		},
 		Commands: []plugin.Command{
 			{
 				Name:     "get-events",
 				HelpText: "Get microservice events (by akoranne@ecsteam.com)",
 				UsageDetails: plugin.Usage{
-					Usage: "cf get-events --today\n   cf get-events --yesterday\n   cf get-events --date <yyyy-mm-dd>\n   cf get-events --all\n ",
+					Usage: "cf get-events --today\n   cf get-events --yesterday\n   cf get-events --date <yyyy-Moon-dd>\n   cf get-events --all\n ",
 				},
 			},
 		},
@@ -53,7 +53,6 @@ func (c Events) Run(cli plugin.CliConnection, args []string) {
 
 		// var filterDate = fmt.Sprintf("%s", today.Format("2006-01-02"))
 		var filterDate = GetStartOfDay(today)
-
 		if len(args) == 2 {
 			if args[1] == "--all" {
 				// request for all events
@@ -71,12 +70,14 @@ func (c Events) Run(cli plugin.CliConnection, args []string) {
 			events := c.GetEventsData(cli, filterDate)
 			c.EventsInCSVFormat(filterDate, orgs, spaces, apps, events)
 		} else if len(args) == 3 {
+			// fmt.Println("------->  (0) totals args - ", len(args), ",", args[1], ",", args[2])
 			// a filter date was passed in. Use that.
-			if args[1] == "--date " {
-				layout := "2007-12-25T11:59:05.000Z"
-				str := args[2]
-				t, err := time.Parse(layout, str)
+			if args[1] == "--date" {
+				const layout = "2006-Jan-02"
+				t, err := time.Parse(layout, args[2])
+				// fmt.Println("-------> (1) filter date - ", t, filterDate, err)
 				if err != nil {
+					fmt.Println("Error: Failed to parse given date - ", args[2])
 					fmt.Println(err)
 					Usage(1)
 				} else {
@@ -84,9 +85,9 @@ func (c Events) Run(cli plugin.CliConnection, args []string) {
 					filterDate = t
 				}
 			}
+			//	fmt.Println("--------> (3) calling getEvents with filter date - ", filterDate)
 			events := c.GetEventsData(cli, filterDate)
 			c.EventsInCSVFormat(filterDate, orgs, spaces, apps, events)
-
 		} else {
 			fmt.Println("\nMissing one or more arguments ... ")
 			Usage(0)
@@ -129,14 +130,19 @@ func (c Events) EventsInCSVFormat(filterDate time.Time, orgs map[string]string, 
 
 	fmt.Printf("%s,%s,%s,%s,%s,%s,%s,%s\n",
 		"DATE", "ORG", "SPACE", "ACTEE-TYPE", "ACTEE-NAME", "ACTOR", "EVENT TYPE", "DETAILS")
+
+	//fmt.Println("# of entities: ", len(events.Resources))
+
 	for _, val := range events.Resources  {
 
 		evTmsp, _ := time.Parse(time.RFC3339, val.Entity.Timestamp)
+		// fmt.Println("timestamps: ", evTmsp.Nanosecond(), filterDate.Nanosecond(), )
 
-		if (evTmsp.Nanosecond() < filterDate.Nanosecond()) {
+		if (evTmsp.Before(filterDate)) {
 			// all events are retrieved in descending order.
 			// we processed all events that are filterDate onwards
 			// reached older events, break out
+			fmt.Println("event date: ", evTmsp, "filterDate: ", filterDate )
 			break
 		}
 
@@ -149,6 +155,7 @@ func (c Events) EventsInCSVFormat(filterDate time.Time, orgs map[string]string, 
 			val.Entity.Timestamp, orgName, spaceName,
 			val.Entity.ActeeType, val.Entity.ActeeName, val.Entity.ActorName, val.Entity.Type, mdata)
 	}
+
 }
 
 

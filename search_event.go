@@ -63,21 +63,23 @@ func (c Events) GetEventsData(cli plugin.CliConnection, filterDate time.Time) Ev
 	// filter date was passed in. Append to the query.
 	var filterurl = "&q=timestamp%3E" + fmt.Sprintf("%s", filterDate.Format("2006-01-02T00:00:00Z"))
 
-
 	// the pattern is:  "/v2/events?order-direction=desc&results-per-page=100&page=%v&q=timestamp%3E2016-12-10"
 	// the first url:
 	//	"/v2/events?order-direction=asc&results-per-page=100&page=1&q=timestamp%3E2016-09-20T00:00:00Z"
 	// 	"/v2/events?order-direction=desc&results-per-page=100&page=1&q=timestamp%3E2016-12-10"	or
 	// 	"/v2/events?order-direction=desc&results-per-page=100&page=1&q=timestamp%3E2016-12-10&q=timestamp%3E2016-12-14"
 	var url = fmt.Sprintf("%s&page=%v%s", baseUrl, "1", filterurl)
-//	fmt.Println(url)
 	res = c.UnmarshallEventSearchResults(url, cli)
+	//	fmt.Println("---------------> DEBUG-1 :%s", url)
+	//	fmt.Println("---------------> # of entities: ", len(res.Resources), res.TotalPages)
 	if res.TotalPages > 1 {
 		for i := 2; i <= res.TotalPages; i++ {
 			// apiUrl := fmt.Sprintf("/v2/events?order-direction=desc&page=%v&results-per-page=100&q=timestamp%3E2016-12-10", strconv.Itoa(i))
 			apiUrl := fmt.Sprintf("%s&page=%v%s", baseUrl, strconv.Itoa(i), filterurl)
 			tRes := c.UnmarshallEventSearchResults(apiUrl, cli)
 			res.Resources = append(res.Resources, tRes.Resources...)
+			//	fmt.Println("---------------> DEBUG-%i :%s", i, apiUrl)
+			//	fmt.Println("---------------> # of entities: ", len(res.Resources), res.TotalPages)
 		}
 	}
 
