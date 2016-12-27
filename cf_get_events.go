@@ -29,7 +29,7 @@ func (c *Events) GetMetadata() plugin.PluginMetadata {
 		Commands: []plugin.Command{
 			{
 				Name:     "get-events",
-				HelpText: "Command to view events associated with microservices for the current CLI target context.",
+				HelpText: "Get microservice events (by akoranne@ecsteam.com)",
 				UsageDetails: plugin.Usage{
 					Usage: "cf get-events --today\n   cf get-events --yesterday\n   cf get-events --date <yyyy-mm-dd>\n   cf get-events --all\n ",
 				},
