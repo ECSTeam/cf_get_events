@@ -19,8 +19,9 @@ NAME:
 USAGE:
    cf get-events --today
    cf get-events --yesterday
-   cf get-events --date <yyyy-mm-dd>
    cf get-events --all
+   cf get-events --date <yyyymmdd>
+   cf get-events --datetime <yyyymmddhhmmss>
 
 ```
 
@@ -58,7 +59,67 @@ DATE,ORG,SPACE,ACTEE-TYPE,ACTEE-NAME,ACTOR,EVENT TYPE,DETAILS
 2016-12-20T00:33:14Z,demo,sandbox,,misbehaving_app,misbehaving_app,app.crash,{Instance:f984efbd-05c0-4076-7f5a-eef87c6b4ea2 Index:0 ExitDescription:2 error(s) occurred:;* 2 error(s) occurred:;;* Exited with status 66;* cancelled;* cancelled Reason:CRASHED Request:{State: Recursive:}}
 2016-12-20T00:17:08Z,demo,sandbox,,misbehaving_app,misbehaving_app,app.crash,{Instance:e1f68c67-b561-4414-5b99-2a74d4ae3d76 Index:0 ExitDescription:2 error(s) occurred:;* 2 error(s) occurred:;;* Exited with status 66;* cancelled;* cancelled Reason:CRASHED Request:{State: Recursive:}}
 2016-12-20T00:01:05Z,demo,sandbox,,misbehaving_app,misbehaving_app,app.crash,{Instance:f0dbc217-88fd-43d4-6510-ddaaebad68c7 Index:0 ExitDescription:2 error(s) occurred:;* 2 error(s) occurred:;;* Exited with status 66;* cancelled;* 1 error(s) occurred:;;* cancelled Reason:CRASHED Request:{State: Recursive:}} $>
+```
 
+
+```
+$> date
+Wed Dec 28 13:31:41 CST 2016
+
+$> cf get-events --yesterday
+
+Following events were recorded from '2016-12-27 00:00:00 +0000 UTC'
+
+DATE,ORG,SPACE,ACTEE-TYPE,ACTEE-NAME,ACTOR,EVENT TYPE,DETAILS
+2016-12-28T17:00:08Z,demo,sandbox,,java-kill,admin,audit.app.ssh-authorized,{Instance: Index:0 ExitDescription: Reason: Request:{State: Recursive:}}
+2016-12-28T16:54:27Z,dr,lab,,pcf-status,admin,audit.app.ssh-authorized,{Instance: Index:0 ExitDescription: Reason: Request:{State: Recursive:}}
+2016-12-28T16:54:11Z,dr,lab,,pcf-status,admin,audit.app.ssh-authorized,{Instance: Index:0 ExitDescription: Reason: Request:{State: Recursive:}}
+2016-12-28T16:53:00Z,dr,lab,,pcf-status,admin,audit.app.ssh-authorized,{Instance: Index:0 ExitDescription: Reason: Request:{State: Recursive:}}
+2016-12-27T19:17:55Z,sandbox,lots-of-apps,,testApp000,admin,audit.app.update,{Instance: Index:0 ExitDescription: Reason: Request:{State: Recursive:}}
+2016-12-27T19:17:55Z,sandbox,lots-of-apps,,testApp000,admin,audit.app.map-route,{Instance: Index:0 ExitDescription: Reason: Request:{State: Recursive:}}
+2016-12-27T00:24:13Z,dr,lab,,testApp01,testApp01,app.crash,{Instance:1a4b839b-f7b3-44e2-7db3-96c228ad483b Index:0 ExitDescription:2 error(s) occurred:;* 1 error(s) occurred:;;* Exited with status 2;* 2 error(s) occurred:;;* cancelled;* cancelled Reason:CRASHED Request:{State: Recursive:}}
+```
+
+```
+$> cf get-events --date 20161225
+
+Following events were recorded from '2016-12-25 00:00:00 +0000 UTC'
+
+DATE,ORG,SPACE,ACTEE-TYPE,ACTEE-NAME,ACTOR,EVENT TYPE,DETAILS
+2016-12-28T17:00:08Z,demo,sandbox,,java-kill,admin,audit.app.ssh-authorized,{Instance: Index:0 ExitDescription: Reason: Request:{State: Recursive:}}
+2016-12-28T16:54:27Z,dr,lab,,pcf-status,admin,audit.app.ssh-authorized,{Instance: Index:0 ExitDescription: Reason: Request:{State: Recursive:}}
+2016-12-28T16:54:11Z,dr,lab,,pcf-status,admin,audit.app.ssh-authorized,{Instance: Index:0 ExitDescription: Reason: Request:{State: Recursive:}}
+2016-12-28T16:53:00Z,dr,lab,,pcf-status,admin,audit.app.ssh-authorized,{Instance: Index:0 ExitDescription: Reason: Request:{State: Recursive:}}
+2016-12-27T19:17:55Z,sandbox,lots-of-apps,,testApp000,admin,audit.app.update,{Instance: Index:0 ExitDescription: Reason: Request:{State: Recursive:}}
+2016-12-27T19:17:55Z,sandbox,lots-of-apps,,testApp000,admin,audit.app.map-route,{Instance: Index:0 ExitDescription: Reason: Request:{State: Recursive:}}
+2016-12-27T00:24:13Z,dr,lab,,testApp01,testApp01,app.crash,{Instance:1a4b839b-f7b3-44e2-7db3-96c228ad483b Index:0 ExitDescription:2 error(s) occurred:;* 1 error(s) occurred:;;* Exited with status 2;* 2 error(s) occurred:;;* cancelled;* cancelled Reason:CRASHED Request:{State: Recursive:}}
+```
+
+```
+$> cf get-events --datetime 20161227190000
+
+Following events were recorded from '2016-12-27 19:00:00 +0000 UTC'
+
+DATE,ORG,SPACE,ACTEE-TYPE,ACTEE-NAME,ACTOR,EVENT TYPE,DETAILS
+2016-12-28T17:00:08Z,demo,sandbox,,java-kill,admin,audit.app.ssh-authorized,{Instance: Index:0 ExitDescription: Reason: Request:{State: Recursive:}}
+2016-12-28T16:54:27Z,dr,lab,,pcf-status,admin,audit.app.ssh-authorized,{Instance: Index:0 ExitDescription: Reason: Request:{State: Recursive:}}
+2016-12-28T16:54:11Z,dr,lab,,pcf-status,admin,audit.app.ssh-authorized,{Instance: Index:0 ExitDescription: Reason: Request:{State: Recursive:}}
+2016-12-28T16:53:00Z,dr,lab,,pcf-status,admin,audit.app.ssh-authorized,{Instance: Index:0 ExitDescription: Reason: Request:{State: Recursive:}}
+2016-12-27T19:17:55Z,sandbox,lots-of-apps,,testApp000,admin,audit.app.update,{Instance: Index:0 ExitDescription: Reason: Request:{State: Recursive:}}
+2016-12-27T19:17:55Z,sandbox,lots-of-apps,,testApp000,admin,audit.app.map-route,{Instance: Index:0 ExitDescription: Reason: Request:{State: Recursive:}}
+```
+
+
+```
+$> cf get-events --datetime 20161227191800
+
+Following events were recorded from '2016-12-27 19:18:00 +0000 UTC'
+
+DATE,ORG,SPACE,ACTEE-TYPE,ACTEE-NAME,ACTOR,EVENT TYPE,DETAILS
+2016-12-28T17:00:08Z,demo,sandbox,,java-kill,admin,audit.app.ssh-authorized,{Instance: Index:0 ExitDescription: Reason: Request:{State: Recursive:}}
+2016-12-28T16:54:27Z,dr,lab,,pcf-status,admin,audit.app.ssh-authorized,{Instance: Index:0 ExitDescription: Reason: Request:{State: Recursive:}}
+2016-12-28T16:54:11Z,dr,lab,,pcf-status,admin,audit.app.ssh-authorized,{Instance: Index:0 ExitDescription: Reason: Request:{State: Recursive:}}
+2016-12-28T16:53:00Z,dr,lab,,pcf-status,admin,audit.app.ssh-authorized,{Instance: Index:0 ExitDescription: Reason: Request:{State: Recursive:}}
 ```
 
 ## Uninstall

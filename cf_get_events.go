@@ -24,14 +24,14 @@ func (c *Events) GetMetadata() plugin.PluginMetadata {
 		Version: plugin.VersionType{
 			Major: 0,
 			Minor: 5,
-			Build: 20161227,
+			Build: 2,
 		},
 		Commands: []plugin.Command{
 			{
 				Name:     "get-events",
 				HelpText: "Get microservice events (by akoranne@ecsteam.com)",
 				UsageDetails: plugin.Usage{
-					Usage: "cf get-events --today\n   cf get-events --yesterday\n   cf get-events --date <yyyy-Moon-dd>\n   cf get-events --all\n ",
+					Usage: "cf get-events --today\n   cf get-events --yesterday\n   cf get-events --all\n   cf get-events --date <yyyymmdd>\n   cf get-events --datetime <yyyymmddhhmmss>\n ",
 				},
 			},
 		},
@@ -73,7 +73,7 @@ func (c Events) Run(cli plugin.CliConnection, args []string) {
 			// fmt.Println("------->  (0) totals args - ", len(args), ",", args[1], ",", args[2])
 			// a filter date was passed in. Use that.
 			if args[1] == "--date" {
-				const layout = "2006-Jan-02"
+				const layout = "20060102"	// yyyymmdd
 				t, err := time.Parse(layout, args[2])
 				// fmt.Println("-------> (1) filter date - ", t, filterDate, err)
 				if err != nil {
@@ -84,7 +84,23 @@ func (c Events) Run(cli plugin.CliConnection, args []string) {
 					// filterDate = fmt.Sprintf("%s", t.Format("2006-01-02"))
 					filterDate = t
 				}
+			} else if args[1] == "--datetime" {
+				const layout = "20060102150405"	// yyyymmddhhmmss
+				t, err := time.Parse(layout, args[2])
+				// fmt.Println("-------> (1) filter date - ", t, filterDate, err)
+				if err != nil {
+					fmt.Println("Error: Failed to parse given date - ", args[2])
+					fmt.Println(err)
+					Usage(1)
+				} else {
+					// filterDate = fmt.Sprintf("%s", t.Format("2006-01-02"))
+					filterDate = t
+				}
+			} else {
+				fmt.Println("\n Missing or invalid date/time argument ... ")
+				Usage(0)
 			}
+
 			//	fmt.Println("--------> (3) calling getEvents with filter date - ", filterDate)
 			events := c.GetEventsData(cli, filterDate)
 			c.EventsInCSVFormat(filterDate, orgs, spaces, apps, events)
@@ -101,8 +117,8 @@ func Usage(code int) {
 	fmt.Println("Usage: cf get-events --today")
 	fmt.Println("       cf get-events --yesterday")
 	fmt.Println("       cf get-events --all")
-	fmt.Println("       cf get-events --date <yyyy-mm-dd>")
-	fmt.Println("             where: filter date in <yyyy-mm-dd>")
+	fmt.Println("       cf get-events --date <yyyymmdd>")
+	fmt.Println("       cf get-events --datetime <yyyymmddhhmmss>")
 	os.Exit(code)
 }
 
@@ -142,7 +158,7 @@ func (c Events) EventsInCSVFormat(filterDate time.Time, orgs map[string]string, 
 			// all events are retrieved in descending order.
 			// we processed all events that are filterDate onwards
 			// reached older events, break out
-			fmt.Println("event date: ", evTmsp, "filterDate: ", filterDate )
+			// 	fmt.Println("event date: ", evTmsp, "filterDate: ", filterDate )
 			break
 		}
 
