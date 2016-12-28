@@ -18,7 +18,7 @@ if [[ "$1" = "release" ]] ; then
 	: ${TAG:?"Usage: build_all.sh [release] [TAG]"}
 
 
-	if $GOPATH/bin/github-release info --tag $TAG > /dev/null 2>&1 ; then
+	if ${github-release} info --tag $TAG > /dev/null 2>&1 ; then
 		echo "$TAG exists, remove it or increment"
 		exit 1
 	else
@@ -61,27 +61,28 @@ sed "s/__TAG__/$TAG/" |
 sed "s/__TODAY__/$NOW/" |
 cat
 
+export github_release="/usr/local/bin/github-release";
 if [[ "$1" = "release" ]] ; then
 
 	git commit -am "Build version $TAG"
 	git push
 
-	$GOPATH/bin/github-release release \
+	${github_release} release \
     --tag $TAG \
     --name "Cloud Foundry get events plugin $TAG" \
     --description "$TAG release - work in progress"
 
-	$GOPATH/bin/github-release upload \
+	${github_release} upload \
     --tag $TAG \
     --name "get-events-plugin-darwin" \
     --file bin/osx/get-events-plugin-darwin
 
-	$GOPATH/bin/github-release upload \
+	${github_release} upload \
     --tag $TAG \
     --name "get-events-plugin-linux" \
     --file bin/linux64/get-events-plugin-linux
 
-	$GOPATH/bin/github-release upload \
+	${github_release} upload \
     --tag $TAG \
     --name "get-events-plugin.exe" \
     --file bin/win64/get-events-plugin.exe
