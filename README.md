@@ -5,7 +5,7 @@ Cloud Foundry plugin to view events associated with microservices.
 ## Install
 
 ```
-$ go get github.com/akoranne/cf_get_events
+$ go get github.com/ECSTeam/cf_get_events
 $ cf install-plugin $GOPATH/bin/cf_get_events
 ```
 
