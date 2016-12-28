@@ -1,0 +1,21 @@
+- name: get-events
+  description: Get microservice events
+  version: __TAG__
+  created: 2016-12-28T14:00:00Z
+  updated: __TODAY__
+  company: ECS Team
+  authors:
+  - name: Ajay Koranne of ECS Team
+    homepage: https://github.com/akoranne
+    contact: akoranne@ecsteam.com
+  homepage: https://github.com/ECSTeam/cf_get_events
+  binaries:
+  - platform: osx
+    url: https://github.com/ECSTeam/cf_get_events/releases/download/__TAG__/get-events-plugin-darwin
+    checksum: __osx-sha1__
+  - platform: win64
+    url: https://github.com/ECSTeam/cf_get_events/releases/download/__TAG__/get-events-plugin.exe
+    checksum: __win64-sha1__
+  - platform: linux64
+    url: https://github.com/ECSTeam/cf_get_events/releases/download/__TAG__/get-events-plugin-linux
+    checksum: __linux64-sha1__
