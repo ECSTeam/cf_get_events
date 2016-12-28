@@ -14,7 +14,7 @@ $ cf install-plugin $GOPATH/bin/cf_get_events
 ```
  $> cf get-events --help
 NAME:
-   get-events - Command to view events associated with microservices for the current CLI target context.
+   get-events - Get microservice events (by akoranne@ecsteam.com)
 
 USAGE:
    cf get-events --today
