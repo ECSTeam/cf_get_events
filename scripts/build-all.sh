@@ -70,7 +70,8 @@ if [[ "$1" = "release" ]] ; then
 	${github_release} release \
     --tag $TAG \
     --name "Cloud Foundry get events plugin $TAG" \
-    --description "$TAG release - work in progress"
+    --description "$TAG release"
+#    --description "$TAG release - work in progress"
 
 	${github_release} upload \
     --tag $TAG \
