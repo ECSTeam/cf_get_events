@@ -137,9 +137,8 @@ Different pipelines can push changes through out the day and night.
 The `get-events` plugin allows the platform operator to get a quick snapshot of all the 
 service events that took place today, or since yesterday, or from a particular date. 
 
-If a micro-service crashes, the service will be restarted. That is one big 
-benefit of cloud foundry platform. However, this resilience can also hide service that crash frequently.  
-The `get-events' plug-in will highlight such services.
+If a micro-service crashes, the service will be restarted. That is one big benefit of cloud foundry platform. 
+However, this resilience can also mask services that crash frequently. The `get-events` plug-in will highlight such services.
 
 Using [cf_scripts/app_profiler](https://github.com/ECSTeam/cf_scripts/tree/master/app_profiler)
 the platform operator can script forwarding the plugin output to `Splunk` or `Statsd` based event logger. 
