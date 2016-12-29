@@ -128,7 +128,7 @@ DATE,ORG,SPACE,ACTEE-TYPE,ACTEE-NAME,ACTOR,EVENT TYPE,DETAILS
 $ cf uninstall-plugin get-events
 ```
 
-## Plugin Story 
+## Motivation 
 
 _Why do I need this plugin?_ 
 
