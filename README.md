@@ -147,7 +147,10 @@ This will help capture events across time and understand event patterns.
 
 ## Access 
 
-The plugin user needs `cloud controller admin` access to get events.
+The `get-events` plugin will show events for the orgs and spaces that the current user has access too.
+
+If you want events, across all orgs, and spaces the plugin user will 
+need `cloud controller admin` access to get all events. To do that, please follow the steps below.
 
 ```
    $ uaac token client get admin -s <MyAdminPassword>
