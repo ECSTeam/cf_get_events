@@ -24,7 +24,7 @@ func (c *Events) GetMetadata() plugin.PluginMetadata {
 		Version: plugin.VersionType{
 			Major: 0,
 			Minor: 5,
-			Build: 3,
+			Build: 4,
 		},
 		Commands: []plugin.Command{
 			{

@@ -143,3 +143,16 @@ However, this resilience can also mask services that crash frequently. The `get-
 Using [cf_scripts/app_profiler](https://github.com/ECSTeam/cf_scripts/tree/master/app_profiler)
 the platform operator can script forwarding the plugin output to `Splunk` or `Statsd` based event logger. 
 This will help capture events across time and understand event patterns.
+
+
+## Access 
+
+The plugin user needs `cloud controller admin` access to get events.
+
+```
+   $ uaac token client get admin -s <MyAdminPassword>
+   $ uaac user add event_plugin_user -p welcome1 --emails <event_plugin_user@mydomain.com>
+   $ uaac member add scim.read event_plugin_user
+   $ uaac member add scim.write event_plugin_user
+   $ uaac member add cloud_controller.admin event_plugin_user   
+```
