@@ -55,8 +55,8 @@ func (c *Events) GetMetadata() plugin.PluginMetadata {
 			{
 				Name:     "get-events",
 				HelpText: "Get microservice events (by akoranne@ecsteam.com)",
-				UsageDetails: plugin.Usage{
-					Usage: "cf get-events --today\n   cf get-events --yesterday\n   cf get-events --all\n   cf get-events --date <yyyymmdd>\n   cf get-events --datetime <yyyymmddhhmmss>\n ",
+				UsageDetails: plugin.Usage {
+					Usage: UsageText(),
 				},
 			},
 		},
@@ -79,27 +79,40 @@ func (c Events) Run(cli plugin.CliConnection, args []string) {
 		return
 	}
 
-	fmt.Println("DEBUG -----> 1: ", ins.fromDate)
+	// fmt.Println("DEBUG -----> 1: ", ins.fromDate)
 	orgs := c.GetOrgs(cli)
 	spaces := c.GetSpaces(cli)
 	apps := c.GetAppData(cli)
 
-	events := c.GetEventsData(cli, ins.fromDate)
-	fmt.Println("DEBUG -----> 2: after getting events");
+	events := c.GetEventsData(cli, ins)
+	// fmt.Println("DEBUG -----> 2: after getting events");
 
-	c.EventsInCSVFormat(ins.fromDate, orgs, spaces, apps, events)
+	c.EventsInCSVFormat(ins, orgs, spaces, apps, events)
 }
 
 
 func Usage(code int) {
-	fmt.Println("")
-	fmt.Println("Usage: cf get-events --today")
-	fmt.Println("       cf get-events --yesterday")
-	fmt.Println("       cf get-events --all")
-	fmt.Println("       cf get-events --date <yyyymmdd>")
-	fmt.Println("       cf get-events --datetime <yyyymmddhhmmss>")
+	fmt.Println("\nUsage: ", UsageText())
 	os.Exit(code)
 }
+
+func UsageText() (string) {
+	usage := "cf get-events [options]" +
+		"\n    where options include: " +
+		"\n       --today                  : get all events for today (till now)" +
+		"\n       --yesterday              : get events for yesterday ownwards (till now)" +
+		"\n       --yesterday-on           : get events from yesterday only" +
+		"\n       --all                    : get all events (defaults to last 90 days)" +
+		"\n       --json                   : list output in json format (default is csv)\n" +
+		"\n       --frdt <yyyymmdd>        : get events from given date onwards (till now)" +
+		"\n       --frdtm <yyyymmddhhmmss> : get events from given date and time onwards (till now)" +
+		"\n       --todt <yyyymmdd>        : get events till given date" +
+		"\n       --todtm <yyyymmddhhmmss> : get events till given date and time\n" +
+		"\n       --frdt <yyyymmdd> --todt <yyyymmdd>" +
+		"\n       --frdtm <yyyymmddhhmmss> --todtm <yyyymmddhhmmss>"
+	return usage
+}
+
 
 
 func GetStartOfDay(today time.Time) (time.Time) {
@@ -110,7 +123,7 @@ func GetStartOfDay(today time.Time) (time.Time) {
 
 func GetEndOfDay(today time.Time) (time.Time) {
 	var now = fmt.Sprintf("%s", today.Format("2006-01-02"))
-	t, _ := time.Parse(time.RFC3339, now+"T11:59:59Z")
+	t, _ := time.Parse(time.RFC3339, now+"T23:59:59Z")
 	return t
 }
 
@@ -122,10 +135,10 @@ func StringToDate(dtStr string) (time.Time) {
 
 
 // PrintInMarkDownFormat prints the buildpack data to console
-func (c Events) EventsInCSVFormat(filterDate time.Time, orgs map[string]string, spaces map[string]SpaceSearchEntity, apps AppSearchResults, events EventSearchResults) {
+func (c Events) EventsInCSVFormat(ins Inputs, orgs map[string]string, spaces map[string]SpaceSearchEntity, apps AppSearchResults, events EventSearchResults) {
 
 	fmt.Println("")
-	fmt.Printf("Following events were recorded from '%s' \n\n", filterDate)
+	fmt.Printf("Following events were recorded from '%s', to '%s' \n\n", ins.fromDate, ins.toDate)
 
 	//  "20161212", "dr", "lab", "app", "pcf-status", "pcf-status",  "app.crash", "crashed", "2 error(s) occurred:\n\n* 2 error(s) occurred:\n\n* Exited with status 255 (out of memory)\n* cancelled\n* 1 error(s) occurred:\n\n* cancelled"
 	//  "2016-12-09T21:44:46Z", "demo", "sandbox", "app", "test-nodejs", "admin", "app.update", "stopped", ""
@@ -140,12 +153,17 @@ func (c Events) EventsInCSVFormat(filterDate time.Time, orgs map[string]string, 
 		evTmsp, _ := time.Parse(time.RFC3339, val.Entity.Timestamp)
 		// fmt.Println("timestamps: ", evTmsp.Nanosecond(), filterDate.Nanosecond(), )
 
-		if (evTmsp.Before(filterDate)) {
+		if (evTmsp.Before(ins.fromDate)) {
 			// all events are retrieved in descending order.
 			// we processed all events that are filterDate onwards
 			// reached older events, break out
 			// 	fmt.Println("event date: ", evTmsp, "filterDate: ", filterDate )
 			break
+		}
+
+		// fmt.Println("timestamps: ", evTmsp, ins.toDate, )
+		if (evTmsp.After(ins.toDate)) {
+			continue
 		}
 
 		space := spaces[val.Entity.SpaceGUID]
@@ -172,17 +190,17 @@ func (c *Events) buildClientOptions(args[] string) (Inputs) {
 	fc := flags.New()
 	fc.NewBoolFlag("all", "all", " get all events (defaults to last 90 days)")
 	fc.NewBoolFlag("today", "today", "get all events for today (till now)")
-	fc.NewBoolFlag("yesterday", "yest", "get events from yesterday ownwards (till now)")
-	fc.NewBoolFlag("yesterday-only", "yoly", "get events for yesterday only")
-	fc.NewStringFlag("date", "fr-dt", "get events from given date onwards (till now)")
-	fc.NewStringFlag("datetime", "fr-dtm", "get events from given date and time onwards (till now)")
-	fc.NewStringFlag("to-date", "to-dt", "get events till given date")
-	fc.NewStringFlag("to-datetime", "to-dtm", "get events till given date and time")
+	fc.NewBoolFlag("yesterday", "yest", "get events from yesterday only")
+	fc.NewBoolFlag("yesterday-on", "yon", "get events for yesterday ownwards (till now)")
+	fc.NewStringFlag("frdt", "frdt", "get events from given date onwards (till now)")
+	fc.NewStringFlag("frdtm", "frdtm", "get events from given date and time onwards (till now)")
+	fc.NewStringFlag("todt", "todt", "get events till given date")
+	fc.NewStringFlag("todtm", "todtm", "get events till given date and time")
 	fc.NewBoolFlag("json", "js", "list output in json format (default is csv)")
 	//fc.NewStringFlag("filter", "f", "specify message filter such as LogMessage, ValueMetric, CounterEvent, HttpStartStop")
 	err := fc.Parse(args[1:]...)
 
-	fmt.Println("DEBUG -----> 0: ", fc)
+	// fmt.Println("DEBUG -----> 0: ", fc)
 
 	if err != nil {
 		fmt.Println("\n Receive error reading arguments ... ", err)
@@ -207,14 +225,14 @@ func (c *Events) buildClientOptions(args[] string) (Inputs) {
 	if (fc.IsSet("yesterday")) {
 		oneDay := time.Hour * -24
 		ins.fromDate  = GetStartOfDay(today.Add(oneDay)) // today - 1 day
-	}
-	if (fc.IsSet("yesterday-only")) {
-		oneDay := time.Hour * -24
-		ins.fromDate  = GetStartOfDay(today.Add(oneDay)) // today - 1 day
 		ins.toDate = GetEndOfDay(ins.fromDate )
 	}
-	if (fc.IsSet("date")) {
-		var value = fc.String("date")
+	if (fc.IsSet("yesterday-on")) {
+		oneDay := time.Hour * -24
+		ins.fromDate  = GetStartOfDay(today.Add(oneDay)) // today - 1 day
+	}
+	if (fc.IsSet("frdt")) {
+		var value = fc.String("frdt")
 		const layout = "20060102"        // yyyymmdd
 		t, err := time.Parse(layout, value)
 		// fmt.Println("-------> (1) filter date - ", t, filterDate, err)
@@ -227,8 +245,8 @@ func (c *Events) buildClientOptions(args[] string) (Inputs) {
 			ins.fromDate  = t
 		}
 	}
-	if (fc.IsSet("datetime")) {
-		var value = fc.String("datetime")
+	if (fc.IsSet("frdtm")) {
+		var value = fc.String("frdtm")
 		const layout = "20060102150405"        // yyyymmddhhmmss
 		t, err := time.Parse(layout, value)
 		// fmt.Println("-------> (1) filter date - ", t, filterDate, err)
@@ -241,10 +259,10 @@ func (c *Events) buildClientOptions(args[] string) (Inputs) {
 			ins.fromDate  = t
 		}
 	}
-	if (fc.IsSet("to-date")) {
-		var value = fc.String("to-date")
-		const layout = "20060102"        // yyyymmdd
-		t, err := time.Parse(layout, value)
+	if (fc.IsSet("todt")) {
+		var value = fc.String("todt")
+		const layout = "20060102150405"        // yyyymmdd
+		t, err := time.Parse(layout, value+"235959")
 		// fmt.Println("-------> (1) filter date - ", t, filterDate, err)
 		if err != nil {
 			fmt.Println("Error: Failed to parse given date - ", value)
@@ -255,10 +273,11 @@ func (c *Events) buildClientOptions(args[] string) (Inputs) {
 			ins.toDate = t
 		}
 	}
-	if (fc.IsSet("to-datetime")) {
-		var value = fc.String("to-datetime")
+	if (fc.IsSet("todtm")) {
+		var value = fc.String("todtm")
 		const layout = "20060102150405"        // yyyymmddhhmmss
 		t, err := time.Parse(layout, value)
+
 		// fmt.Println("-------> (1) filter date - ", t, filterDate, err)
 		if err != nil {
 			fmt.Println("Error: Failed to parse given date - ", value)
@@ -274,8 +293,7 @@ func (c *Events) buildClientOptions(args[] string) (Inputs) {
 		ins.isJson = true
 		ins.isCsv = false
 	}
-
-	fmt.Println("-------> (1) ins - ", ins)
+	// fmt.Println("-------> (1) ins - ", ins.fromDate, ins.toDate)
 
 	return ins
 }
