@@ -1,3 +1,18 @@
+// Copyright (c) 2016 ECS Team, Inc. - All Rights Reserved
+// https://github.com/ECSTeam/cloudfoundry-top-plugin
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
@@ -7,7 +22,9 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"github.com/simonleung8/flags"
 )
+
 
 // Events represents Buildpack Usage CLI interface
 type Events struct{}
@@ -17,14 +34,22 @@ type Metadata struct {
 	GUID string `json:"guid"`
 }
 
+type Inputs struct {
+	fromDate time.Time
+	toDate   time.Time
+	isCsv    bool
+	isJson   bool
+}
+
+
 // GetMetadata provides the Cloud Foundry CLI with metadata to provide user about how to use `get-events` command
 func (c *Events) GetMetadata() plugin.PluginMetadata {
 	return plugin.PluginMetadata{
 		Name: "get-events",
 		Version: plugin.VersionType{
 			Major: 0,
-			Minor: 5,
-			Build: 4,
+			Minor: 0,
+			Build: 0,
 		},
 		Commands: []plugin.Command{
 			{
@@ -44,71 +69,25 @@ func main() {
 
 // Run is what is executed by the Cloud Foundry CLI when the get-events command is specified
 func (c Events) Run(cli plugin.CliConnection, args []string) {
-	if args[0] == "get-events" {
+	var ins Inputs
 
-		orgs := c.GetOrgs(cli)
-		spaces := c.GetSpaces(cli)
-		apps := c.GetAppData(cli)
-		today := time.Now()
-
-		// var filterDate = fmt.Sprintf("%s", today.Format("2006-01-02"))
-		var filterDate = GetStartOfDay(today)
-		if len(args) == 2 {
-			if args[1] == "--all" {
-				// request for all events
-				// this will be costly..
-				nintyDays := time.Hour * -(24 * 90)
-				filterDate = today.Add(nintyDays) // today - 90  days
-			} else if args[1] == "--yesterday" {
-				oneDay := time.Hour * -24
-				filterDate = GetStartOfDay(today.Add(oneDay)) // today - 1 day
-				// filterDate = fmt.Sprintf("%s", yesterday.Format("2006-01-02"))
-			} else {
-				// all other switches default to today
-				// to avoid runaway
-			}
-			events := c.GetEventsData(cli, filterDate)
-			c.EventsInCSVFormat(filterDate, orgs, spaces, apps, events)
-		} else if len(args) == 3 {
-			// fmt.Println("------->  (0) totals args - ", len(args), ",", args[1], ",", args[2])
-			// a filter date was passed in. Use that.
-			if args[1] == "--date" {
-				const layout = "20060102"	// yyyymmdd
-				t, err := time.Parse(layout, args[2])
-				// fmt.Println("-------> (1) filter date - ", t, filterDate, err)
-				if err != nil {
-					fmt.Println("Error: Failed to parse given date - ", args[2])
-					fmt.Println(err)
-					Usage(1)
-				} else {
-					// filterDate = fmt.Sprintf("%s", t.Format("2006-01-02"))
-					filterDate = t
-				}
-			} else if args[1] == "--datetime" {
-				const layout = "20060102150405"	// yyyymmddhhmmss
-				t, err := time.Parse(layout, args[2])
-				// fmt.Println("-------> (1) filter date - ", t, filterDate, err)
-				if err != nil {
-					fmt.Println("Error: Failed to parse given date - ", args[2])
-					fmt.Println(err)
-					Usage(1)
-				} else {
-					// filterDate = fmt.Sprintf("%s", t.Format("2006-01-02"))
-					filterDate = t
-				}
-			} else {
-				fmt.Println("\n Missing or invalid date/time argument ... ")
-				Usage(0)
-			}
-
-			//	fmt.Println("--------> (3) calling getEvents with filter date - ", filterDate)
-			events := c.GetEventsData(cli, filterDate)
-			c.EventsInCSVFormat(filterDate, orgs, spaces, apps, events)
-		} else {
-			fmt.Println("\nMissing one or more arguments ... ")
-			Usage(0)
-		}
+	switch args[0] {
+	case "get-events":
+		ins = c.buildClientOptions(args)
+	case "example-alternate-command":
+	default:
+		return
 	}
+
+	fmt.Println("DEBUG -----> 1: ", ins.fromDate)
+	orgs := c.GetOrgs(cli)
+	spaces := c.GetSpaces(cli)
+	apps := c.GetAppData(cli)
+
+	events := c.GetEventsData(cli, ins.fromDate)
+	fmt.Println("DEBUG -----> 2: after getting events");
+
+	c.EventsInCSVFormat(ins.fromDate, orgs, spaces, apps, events)
 }
 
 
@@ -122,9 +101,16 @@ func Usage(code int) {
 	os.Exit(code)
 }
 
+
 func GetStartOfDay(today time.Time) (time.Time) {
 	var now = fmt.Sprintf("%s", today.Format("2006-01-02"))
 	t, _ := time.Parse(time.RFC3339, now+"T00:00:00Z")
+	return t
+}
+
+func GetEndOfDay(today time.Time) (time.Time) {
+	var now = fmt.Sprintf("%s", today.Format("2006-01-02"))
+	t, _ := time.Parse(time.RFC3339, now+"T11:59:59Z")
 	return t
 }
 
@@ -174,10 +160,122 @@ func (c Events) EventsInCSVFormat(filterDate time.Time, orgs map[string]string, 
 
 }
 
-
 func sanitize(data string) (string) {
 	var re = regexp.MustCompile(`\r?\n`)
 	var str = re.ReplaceAllString(data, ";")
 	str = strings.Replace(str, ";;", ";", 1)
 	return str;
+}
+
+func (c *Events) buildClientOptions(args[] string) (Inputs) {
+
+	fc := flags.New()
+	fc.NewBoolFlag("all", "all", " get all events (defaults to last 90 days)")
+	fc.NewBoolFlag("today", "today", "get all events for today (till now)")
+	fc.NewBoolFlag("yesterday", "yest", "get events from yesterday ownwards (till now)")
+	fc.NewBoolFlag("yesterday-only", "yoly", "get events for yesterday only")
+	fc.NewStringFlag("date", "fr-dt", "get events from given date onwards (till now)")
+	fc.NewStringFlag("datetime", "fr-dtm", "get events from given date and time onwards (till now)")
+	fc.NewStringFlag("to-date", "to-dt", "get events till given date")
+	fc.NewStringFlag("to-datetime", "to-dtm", "get events till given date and time")
+	fc.NewBoolFlag("json", "js", "list output in json format (default is csv)")
+	//fc.NewStringFlag("filter", "f", "specify message filter such as LogMessage, ValueMetric, CounterEvent, HttpStartStop")
+	err := fc.Parse(args[1:]...)
+
+	fmt.Println("DEBUG -----> 0: ", fc)
+
+	if err != nil {
+		fmt.Println("\n Receive error reading arguments ... ", err)
+		Usage(1)
+	}
+
+	today := time.Now()
+
+	var ins Inputs
+	ins.isCsv = true
+	ins.isJson = false
+	ins.fromDate = GetStartOfDay(today)
+	ins.toDate = time.Now()
+
+	if (fc.IsSet("all")) {
+		nintyDays := time.Hour * -(24 * 90)
+		ins.fromDate  = today.Add(nintyDays) // today - 90  days
+	}
+	if (fc.IsSet("today")) {
+		ins.fromDate  = GetStartOfDay(today)
+	}
+	if (fc.IsSet("yesterday")) {
+		oneDay := time.Hour * -24
+		ins.fromDate  = GetStartOfDay(today.Add(oneDay)) // today - 1 day
+	}
+	if (fc.IsSet("yesterday-only")) {
+		oneDay := time.Hour * -24
+		ins.fromDate  = GetStartOfDay(today.Add(oneDay)) // today - 1 day
+		ins.toDate = GetEndOfDay(ins.fromDate )
+	}
+	if (fc.IsSet("date")) {
+		var value = fc.String("date")
+		const layout = "20060102"        // yyyymmdd
+		t, err := time.Parse(layout, value)
+		// fmt.Println("-------> (1) filter date - ", t, filterDate, err)
+		if err != nil {
+			fmt.Println("Error: Failed to parse given date - ", value)
+			fmt.Println(err)
+			Usage(1)
+		} else {
+			// filterDate = fmt.Sprintf("%s", t.Format("2006-01-02"))
+			ins.fromDate  = t
+		}
+	}
+	if (fc.IsSet("datetime")) {
+		var value = fc.String("datetime")
+		const layout = "20060102150405"        // yyyymmddhhmmss
+		t, err := time.Parse(layout, value)
+		// fmt.Println("-------> (1) filter date - ", t, filterDate, err)
+		if err != nil {
+			fmt.Println("Error: Failed to parse given date - ", value)
+			fmt.Println(err)
+			Usage(1)
+		} else {
+			// filterDate = fmt.Sprintf("%s", t.Format("2006-01-02"))
+			ins.fromDate  = t
+		}
+	}
+	if (fc.IsSet("to-date")) {
+		var value = fc.String("to-date")
+		const layout = "20060102"        // yyyymmdd
+		t, err := time.Parse(layout, value)
+		// fmt.Println("-------> (1) filter date - ", t, filterDate, err)
+		if err != nil {
+			fmt.Println("Error: Failed to parse given date - ", value)
+			fmt.Println(err)
+			Usage(1)
+		} else {
+			// filterDate = fmt.Sprintf("%s", t.Format("2006-01-02"))
+			ins.toDate = t
+		}
+	}
+	if (fc.IsSet("to-datetime")) {
+		var value = fc.String("to-datetime")
+		const layout = "20060102150405"        // yyyymmddhhmmss
+		t, err := time.Parse(layout, value)
+		// fmt.Println("-------> (1) filter date - ", t, filterDate, err)
+		if err != nil {
+			fmt.Println("Error: Failed to parse given date - ", value)
+			fmt.Println(err)
+			Usage(1)
+		} else {
+			// filterDate = fmt.Sprintf("%s", t.Format("2006-01-02"))
+			ins.toDate = t
+		}
+	}
+
+	if (fc.IsSet("json")) {
+		ins.isJson = true
+		ins.isCsv = false
+	}
+
+	fmt.Println("-------> (1) ins - ", ins)
+
+	return ins
 }

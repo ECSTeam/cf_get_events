@@ -1,6 +1,6 @@
 # Cloud Foundry Get Events CLI Plugin
 
-Cloud Foundry plugin to view events associated with microservices.
+Cloud Foundry plugin to view events for applications or long running processes - LRPs.
 
 ## Install
 
@@ -14,7 +14,7 @@ $ cf install-plugin $GOPATH/bin/cf_get_events
 ```
  $> cf get-events --help
 NAME:
-   get-events - Get microservice events (by akoranne@ecsteam.com)
+   get-events - Get events for applications / long running processes (LRPs) (by akoranne@ecsteam.com)
 
 USAGE:
    cf get-events --today
@@ -132,13 +132,14 @@ $ cf uninstall-plugin get-events
 
 _Why do I need this plugin?_ 
 
-In a large organization, a cloud coundry foundation can have hundreds of microservices. 
+In a large organization, a cloud foundry foundation can have hundreds of application instances and LRPs. 
 Different pipelines can push changes through out the day and night. 
 The `get-events` plugin allows the platform operator to get a quick snapshot of all the 
-service events that took place today, or since yesterday, or from a particular date. 
+LRP events that took place today, or since yesterday, or from a particular date. 
 
-If a micro-service crashes, the service will be restarted. That is one big benefit of cloud foundry platform. 
-However, this resilience can also mask services that crash frequently. The `get-events` plug-in will highlight such services.
+If a LRP crashes, that LRP will be restarted. That is one big benefit of cloud foundry platform. 
+However, this resilience can also mask services that crash frequently. 
+The `get-events` plug-in will highlight such LRPs.
 
 Using [cf_scripts/app_profiler](https://github.com/ECSTeam/cf_scripts/tree/master/app_profiler)
 the platform operator can script forwarding the plugin output to `Splunk` or `Statsd` based event logger. 
