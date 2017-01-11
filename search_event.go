@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/cloudfoundry/cli/plugin"
-	"time"
 )
 
 // EventSearchResults represents top level attributes of JSON response from Cloud Foundry API
@@ -55,13 +54,13 @@ type ESEMetadataRequest struct {
 
 
 // GetEventsData requests all of the application events from Cloud Foundry
-func (c Events) GetEventsData(cli plugin.CliConnection, filterDate time.Time) EventSearchResults {
+func (c Events) GetEventsData(cli plugin.CliConnection, ins Inputs) EventSearchResults {
 	var res EventSearchResults
 
 	// var baseUrl = "/v2/events?order-direction=asc&results-per-page=100"
 	var baseUrl = "/v2/events?order-direction=desc&results-per-page=100"
 	// filter date was passed in. Append to the query.
-	var filterurl = "&q=timestamp%3E" + fmt.Sprintf("%s", filterDate.Format("2006-01-02T00:00:00Z"))
+	var filterurl = "&q=timestamp%3E" + fmt.Sprintf("%s", ins.fromDate.Format("2006-01-02T00:00:00Z"))
 
 	// the pattern is:  "/v2/events?order-direction=desc&results-per-page=100&page=%v&q=timestamp%3E2016-12-10"
 	// the first url:
