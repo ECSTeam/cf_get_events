@@ -198,6 +198,42 @@ $> cf get-events --frdtm 20170109150000 --todtm 20170109160000
 	2017-01-09T15:28:20Z,sandbox,cftop,,top-interactive,admin,audit.app.update,{Instance: Index:0 ExitDescription: Reason: Request:{State: Recursive:}}
 ```
 
+```
+$> cf get-events --from 20170111050000 --to 20170111060000 --json
+{
+	"comment": "Following events were recorded from '2017-01-11 05:00:00 +0000 UTC', to '2017-01-11 06:00:00 +0000 UTC' \n\n",
+	"resources": [
+		{
+			"entity": {
+				"type": "app.crash",
+				"actor": "c55ec923-4bf3-4c55-b46e-da02dfbae40f",
+				"actor_type": "app",
+				"actor_name": "testApp000c-green",
+				"actee": "c55ec923-4bf3-4c55-b46e-da02dfbae40f",
+				"acte_type": "",
+				"actee_name": "testApp000c-green",
+				"timestamp": "2017-01-11T05:43:07Z",
+				"metadata": {
+					"instance": "d83e3e44-4339-4a93-4239-247f66f2339c",
+					"exit_description": "2 error(s) occurred:\n\n* 2 error(s) occurred:\n\n* Exited with status 255 (out of memory)\n* cancelled\n* cancelled",
+					"reason": "CRASHED",
+					"request": {
+						"state": "",
+						"recursive": ""
+					}
+				},
+				"space_guid": "8d3ea4ce-3fca-4e63-b318-bccc70cfe87d",
+				"organization_guid": "007e5053-5eac-4bd0-98eb-a2031a2bd9cc",
+				"space": "lab",
+				"org": "dr"
+			},
+			"metadata": {
+				"guid": "4bed874b-3cac-4d3e-b25e-f55d33b931b6"
+			}
+		}
+	]
+}
+```
 
 ## Uninstall
 
