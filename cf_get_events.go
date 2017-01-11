@@ -103,7 +103,7 @@ func UsageText() (string) {
 	usage := "cf get-events [options]" +
 		"\n    where options include: " +
 		"\n       --today                  : get all events for today (till now)" +
-		"\n       --yesterday              : get events for yesterday ownwards (till now)" +
+		"\n       --yesterday              : get events for yesterday onwards (till now)" +
 		"\n       --yesterday-on           : get events from yesterday only" +
 		"\n       --all                    : get all events (defaults to last 90 days)" +
 		"\n       --json                   : list output in json format (default is csv)\n" +

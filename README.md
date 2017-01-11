@@ -37,7 +37,7 @@ NAME:
 Usage: cf get-events [options]
     where options include:
        --today                  : get all events for today (till now)
-       --yesterday              : get events for yesterday ownwards (till now)
+       --yesterday              : get events for yesterday onwards (till now)
        --yesterday-on           : get events from yesterday only
        --all                    : get all events (defaults to last 90 days)
        --json                   : list output in json format (default is csv)
