@@ -7,7 +7,14 @@ import (
 	"strings"
 
 	"github.com/cloudfoundry/cli/plugin"
+	"time"
 )
+
+// OutputResults represents the filtered event results for the input args
+type OutputResults struct {
+	Comment      string  `json:"comment"`
+	Resources    []EventSearchResources `json:"resources"`
+}
 
 // EventSearchResults represents top level attributes of JSON response from Cloud Foundry API
 type EventSearchResults struct {
@@ -37,6 +44,8 @@ type EventSearchEntity struct {
 	Metadata  EventSearchEntityMetadata `json:"metadata"`
 	SpaceGUID                    string `json:"space_guid"`
 	OrgGUID                      string `json:"organization_guid"`
+	Space                        string `json:"space"`
+	Org                          string `json:"org"`
 }
 
 type EventSearchEntityMetadata struct {
@@ -67,10 +76,13 @@ func (c Events) GetEventsData(cli plugin.CliConnection, ins Inputs) EventSearchR
 	//	"/v2/events?order-direction=asc&results-per-page=100&page=1&q=timestamp%3E2016-09-20T00:00:00Z"
 	// 	"/v2/events?order-direction=desc&results-per-page=100&page=1&q=timestamp%3E2016-12-10"	or
 	// 	"/v2/events?order-direction=desc&results-per-page=100&page=1&q=timestamp%3E2016-12-10&q=timestamp%3E2016-12-14"
+
 	var url = fmt.Sprintf("%s&page=%v%s", baseUrl, "1", filterurl)
 	res = c.UnmarshallEventSearchResults(url, cli)
+
 	//	fmt.Println("---------------> DEBUG-1 :%s", url)
 	//	fmt.Println("---------------> # of entities: ", len(res.Resources), res.TotalPages)
+
 	if res.TotalPages > 1 {
 		for i := 2; i <= res.TotalPages; i++ {
 			// apiUrl := fmt.Sprintf("/v2/events?order-direction=desc&page=%v&results-per-page=100&q=timestamp%3E2016-12-10", strconv.Itoa(i))
@@ -92,4 +104,48 @@ func (c Events) UnmarshallEventSearchResults(apiUrl string, cli plugin.CliConnec
 	json.Unmarshal([]byte(strings.Join(output, "")), &tRes)
 
 	return tRes
+}
+
+// filter the results for given input criteria.
+func (c Events) FilterResults(cli plugin.CliConnection, ins Inputs, orgs map[string]string, spaces map[string]SpaceSearchEntity, apps AppSearchResults, events EventSearchResults) (OutputResults) {
+	var results OutputResults
+
+	results.Comment = fmt.Sprintf("Following events were recorded from '%s', to '%s' \n\n", ins.fromDate, ins.toDate)
+
+	for _, val := range events.Resources  {
+
+		evTmsp, _ := time.Parse(time.RFC3339, val.Entity.Timestamp)
+		// fmt.Println("timestamps: ", evTmsp.Nanosecond(), filterDate.Nanosecond(), )
+
+		if (evTmsp.Before(ins.fromDate)) {
+			// all events are retrieved in descending order.
+			// we processed all events that are filterDate onwards
+			// reached older events, break out
+			// 	fmt.Println("event date: ", evTmsp, "filterDate: ", filterDate )
+			break
+		}
+
+		if (evTmsp.After(ins.toDate)) {
+			continue
+		}
+
+		var outEntity EventSearchResources
+
+		outEntity.Metadata  = val.Metadata
+		outEntity.Entity.Type      = val.Entity.Type
+		outEntity.Entity.Actor     = val.Entity.Actor
+		outEntity.Entity.ActorType = val.Entity.ActorType
+		outEntity.Entity.ActorName = val.Entity.ActorName
+		outEntity.Entity.Actee     = val.Entity.Actee
+		outEntity.Entity.ActeeType = val.Entity.ActeeType
+		outEntity.Entity.ActeeName = val.Entity.ActeeName
+		outEntity.Entity.Timestamp = val.Entity.Timestamp
+		outEntity.Entity.Metadata  = val.Entity.Metadata
+		outEntity.Entity.SpaceGUID = val.Entity.SpaceGUID
+		outEntity.Entity.OrgGUID   = val.Entity.OrgGUID
+		outEntity.Entity.Org       = orgs[val.Entity.OrgGUID]
+		outEntity.Entity.Space     = spaces[val.Entity.SpaceGUID].Name
+		results.Resources = append(results.Resources, outEntity)
+	}
+	return results;
 }
