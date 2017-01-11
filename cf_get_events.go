@@ -107,12 +107,12 @@ func UsageText() (string) {
 		"\n       --yesterday-on           : get events from yesterday only" +
 		"\n       --all                    : get all events (defaults to last 90 days)" +
 		"\n       --json                   : list output in json format (default is csv)\n" +
-		"\n       --frdt <yyyymmdd>        : get events from given date onwards (till now)" +
-		"\n       --frdtm <yyyymmddhhmmss> : get events from given date and time onwards (till now)" +
-		"\n       --todt <yyyymmdd>        : get events till given date" +
-		"\n       --todtm <yyyymmddhhmmss> : get events till given date and time\n" +
-		"\n       --frdt <yyyymmdd> --todt <yyyymmdd>" +
-		"\n       --frdtm <yyyymmddhhmmss> --todtm <yyyymmddhhmmss>"
+		"\n       --from <yyyymmdd>        : get events from given date onwards (till now)" +
+		"\n       --from <yyyymmddhhmmss>  : get events from given date and time onwards (till now)" +
+		"\n       --to <yyyymmdd>          : get events till given date" +
+		"\n       --to <yyyymmddhhmmss>    : get events till given date and time\n" +
+		"\n       --from <yyyymmdd> --to <yyyymmdd>" +
+		"\n       --from <yyyymmddhhmmss> --to <yyyymmddhhmmss>"
 	return usage
 }
 
@@ -142,11 +142,9 @@ func (c *Events) buildClientOptions(args[] string) (Inputs) {
 	fc.NewBoolFlag("all", "all", " get all events (defaults to last 90 days)")
 	fc.NewBoolFlag("today", "today", "get all events for today (till now)")
 	fc.NewBoolFlag("yesterday", "yest", "get events from yesterday only")
-	fc.NewBoolFlag("yesterday-on", "yon", "get events for yesterday ownwards (till now)")
-	fc.NewStringFlag("frdt", "frdt", "get events from given date onwards (till now)")
-	fc.NewStringFlag("frdtm", "frdtm", "get events from given date and time onwards (till now)")
-	fc.NewStringFlag("todt", "todt", "get events till given date")
-	fc.NewStringFlag("todtm", "todtm", "get events till given date and time")
+	fc.NewBoolFlag("yesterday-on", "yon", "get events for yesterday onwards (till now)")
+	fc.NewStringFlag("from", "fr", "get events from given date [+ time] onwards (till now)")
+	fc.NewStringFlag("to", "to", "get events till given date [+ time]")
 	fc.NewBoolFlag("json", "js", "list output in json format (default is csv)")
 	err := fc.Parse(args[1:]...)
 
@@ -179,53 +177,44 @@ func (c *Events) buildClientOptions(args[] string) (Inputs) {
 		oneDay := time.Hour * -24
 		ins.fromDate  = GetStartOfDay(today.Add(oneDay)) // today - 1 day
 	}
-	if (fc.IsSet("frdt")) {
-		var value = fc.String("frdt")
-		const layout = "20060102"        // yyyymmdd
-		t, err := time.Parse(layout, value)
-		// fmt.Println("-------> (1) filter date - ", t, filterDate, err)
-		if err != nil {
-			fmt.Println("Error: Failed to parse given date - ", value)
-			fmt.Println(err)
-			Usage(1)
-		} else {
-			// filterDate = fmt.Sprintf("%s", t.Format("2006-01-02"))
-			ins.fromDate  = t
-		}
-	}
-	if (fc.IsSet("frdtm")) {
-		var value = fc.String("frdtm")
-		const layout = "20060102150405"        // yyyymmddhhmmss
-		t, err := time.Parse(layout, value)
-		// fmt.Println("-------> (1) filter date - ", t, filterDate, err)
-		if err != nil {
-			fmt.Println("Error: Failed to parse given date - ", value)
-			fmt.Println(err)
-			Usage(1)
-		} else {
-			// filterDate = fmt.Sprintf("%s", t.Format("2006-01-02"))
-			ins.fromDate  = t
-		}
-	}
-	if (fc.IsSet("todt")) {
-		var value = fc.String("todt")
-		const layout = "20060102150405"        // yyyymmdd
-		t, err := time.Parse(layout, value+"235959")
-		// fmt.Println("-------> (1) filter date - ", t, filterDate, err)
-		if err != nil {
-			fmt.Println("Error: Failed to parse given date - ", value)
-			fmt.Println(err)
-			Usage(1)
-		} else {
-			// filterDate = fmt.Sprintf("%s", t.Format("2006-01-02"))
-			ins.toDate = t
-		}
-	}
-	if (fc.IsSet("todtm")) {
-		var value = fc.String("todtm")
-		const layout = "20060102150405"        // yyyymmddhhmmss
-		t, err := time.Parse(layout, value)
+	if (fc.IsSet("from")) {
+		var value = fc.String("from")
+		var layout string
 
+		switch len(value) {
+		case 8:
+			layout = "20060102"        // yyyymmdd
+		case 14:
+			layout = "20060102150405"        // yyyymmddhhmmss
+		default:
+			fmt.Println("Error: Failed to parse `from` date - ", value)
+			fmt.Println(err)
+			Usage(1)
+		}
+		t, err := time.Parse(layout, value)
+		// fmt.Println("-------> (1) filter date - ", t, filterDate, err)
+		if err != nil {
+			fmt.Println("Error: Failed to parse `from` date - ", value)
+			fmt.Println(err)
+			Usage(1)
+		} else {
+			ins.fromDate  = t
+		}
+	}
+	if (fc.IsSet("to")) {
+		var value = fc.String("to")
+		const layout = "20060102150405"        // yyyymmdd
+
+		switch len(value) {
+		case 8:
+			value = value + "235959"
+		case 14:
+		default:
+			fmt.Println("Error: Failed to parse `from` date - ", value)
+			fmt.Println(err)
+			Usage(1)
+		}
+		t, err := time.Parse(layout, value)
 		// fmt.Println("-------> (1) filter date - ", t, filterDate, err)
 		if err != nil {
 			fmt.Println("Error: Failed to parse given date - ", value)

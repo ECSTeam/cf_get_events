@@ -41,13 +41,14 @@ Usage: cf get-events [options]
        --yesterday-on           : get events from yesterday only
        --all                    : get all events (defaults to last 90 days)
        --json                   : list output in json format (default is csv)
-       --frdt <yyyymmdd>        : get events from given date onwards (till now)
-       --frdtm <yyyymmddhhmmss> : get events from given date and time onwards (till now)
-       --todt <yyyymmdd>        : get events till given date
-       --todtm <yyyymmddhhmmss> : get events till given date and time
-       --frdt <yyyymmdd> --todt <yyyymmdd>
-       --frdtm <yyyymmddhhmmss> --todtm <yyyymmddhhmmss>
 
+       --from <yyyymmdd>        : get events from given date onwards (till now)
+       --from <yyyymmddhhmmss>  : get events from given date and time onwards (till now)
+       --to <yyyymmdd>          : get events till given date
+       --to <yyyymmddhhmmss>    : get events till given date and time
+
+       --from <yyyymmdd> --to <yyyymmdd>
+       --from <yyyymmddhhmmss> --to <yyyymmddhhmmss>
 ```
 
 ## Access 
