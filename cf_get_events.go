@@ -23,6 +23,8 @@ import (
 	"regexp"
 	"strings"
 	"github.com/simonleung8/flags"
+	"bytes"
+	"encoding/json"
 )
 
 
@@ -34,13 +36,13 @@ type Metadata struct {
 	GUID string `json:"guid"`
 }
 
+// Inputs represent the parsed input args
 type Inputs struct {
 	fromDate time.Time
 	toDate   time.Time
 	isCsv    bool
 	isJson   bool
 }
-
 
 // GetMetadata provides the Cloud Foundry CLI with metadata to provide user about how to use `get-events` command
 func (c *Events) GetMetadata() plugin.PluginMetadata {
@@ -79,15 +81,16 @@ func (c Events) Run(cli plugin.CliConnection, args []string) {
 		return
 	}
 
-	// fmt.Println("DEBUG -----> 1: ", ins.fromDate)
 	orgs := c.GetOrgs(cli)
 	spaces := c.GetSpaces(cli)
 	apps := c.GetAppData(cli)
-
 	events := c.GetEventsData(cli, ins)
-	// fmt.Println("DEBUG -----> 2: after getting events");
-
-	c.EventsInCSVFormat(ins, orgs, spaces, apps, events)
+	results := c.FilterResults(cli, ins, orgs, spaces, apps, events)
+	if (ins.isCsv) {
+		c.EventsInCSVFormat(results)
+	} else {
+		c.EventsInJsonFormat(results)
+	}
 }
 
 
@@ -113,8 +116,6 @@ func UsageText() (string) {
 	return usage
 }
 
-
-
 func GetStartOfDay(today time.Time) (time.Time) {
 	var now = fmt.Sprintf("%s", today.Format("2006-01-02"))
 	t, _ := time.Parse(time.RFC3339, now+"T00:00:00Z")
@@ -127,57 +128,7 @@ func GetEndOfDay(today time.Time) (time.Time) {
 	return t
 }
 
-func StringToDate(dtStr string) (time.Time) {
-	// t, _ := time.Parse(time.RFC3339, dtStr+"T00:00:00Z")
-	t, _ := time.Parse(time.RFC3339, dtStr)
-	return t
-}
-
-
-// PrintInMarkDownFormat prints the buildpack data to console
-func (c Events) EventsInCSVFormat(ins Inputs, orgs map[string]string, spaces map[string]SpaceSearchEntity, apps AppSearchResults, events EventSearchResults) {
-
-	fmt.Println("")
-	fmt.Printf("Following events were recorded from '%s', to '%s' \n\n", ins.fromDate, ins.toDate)
-
-	//  "20161212", "dr", "lab", "app", "pcf-status", "pcf-status",  "app.crash", "crashed", "2 error(s) occurred:\n\n* 2 error(s) occurred:\n\n* Exited with status 255 (out of memory)\n* cancelled\n* 1 error(s) occurred:\n\n* cancelled"
-	//  "2016-12-09T21:44:46Z", "demo", "sandbox", "app", "test-nodejs", "admin", "app.update", "stopped", ""
-
-	fmt.Printf("%s,%s,%s,%s,%s,%s,%s,%s\n",
-		"DATE", "ORG", "SPACE", "ACTEE-TYPE", "ACTEE-NAME", "ACTOR", "EVENT TYPE", "DETAILS")
-
-	//fmt.Println("# of entities: ", len(events.Resources))
-
-	for _, val := range events.Resources  {
-
-		evTmsp, _ := time.Parse(time.RFC3339, val.Entity.Timestamp)
-		// fmt.Println("timestamps: ", evTmsp.Nanosecond(), filterDate.Nanosecond(), )
-
-		if (evTmsp.Before(ins.fromDate)) {
-			// all events are retrieved in descending order.
-			// we processed all events that are filterDate onwards
-			// reached older events, break out
-			// 	fmt.Println("event date: ", evTmsp, "filterDate: ", filterDate )
-			break
-		}
-
-		// fmt.Println("timestamps: ", evTmsp, ins.toDate, )
-		if (evTmsp.After(ins.toDate)) {
-			continue
-		}
-
-		space := spaces[val.Entity.SpaceGUID]
-		spaceName := space.Name
-		orgName := orgs[space.OrgGUID]
-
-		var mdata = sanitize(fmt.Sprintf("%+v", val.Entity.Metadata))
-		fmt.Printf("%s,%s,%s,%s,%s,%s,%s,%s\n",
-			val.Entity.Timestamp, orgName, spaceName,
-			val.Entity.ActeeType, val.Entity.ActeeName, val.Entity.ActorName, val.Entity.Type, mdata)
-	}
-
-}
-
+// sanitize data by replacing \r, and \n with ';'
 func sanitize(data string) (string) {
 	var re = regexp.MustCompile(`\r?\n`)
 	var str = re.ReplaceAllString(data, ";")
@@ -185,8 +136,8 @@ func sanitize(data string) (string) {
 	return str;
 }
 
+// read arguments passed for the plugin
 func (c *Events) buildClientOptions(args[] string) (Inputs) {
-
 	fc := flags.New()
 	fc.NewBoolFlag("all", "all", " get all events (defaults to last 90 days)")
 	fc.NewBoolFlag("today", "today", "get all events for today (till now)")
@@ -197,10 +148,7 @@ func (c *Events) buildClientOptions(args[] string) (Inputs) {
 	fc.NewStringFlag("todt", "todt", "get events till given date")
 	fc.NewStringFlag("todtm", "todtm", "get events till given date and time")
 	fc.NewBoolFlag("json", "js", "list output in json format (default is csv)")
-	//fc.NewStringFlag("filter", "f", "specify message filter such as LogMessage, ValueMetric, CounterEvent, HttpStartStop")
 	err := fc.Parse(args[1:]...)
-
-	// fmt.Println("DEBUG -----> 0: ", fc)
 
 	if err != nil {
 		fmt.Println("\n Receive error reading arguments ... ", err)
@@ -297,3 +245,34 @@ func (c *Events) buildClientOptions(args[] string) (Inputs) {
 
 	return ins
 }
+
+// prints the results as a csv text to console
+func (c Events) EventsInCSVFormat(results OutputResults) {
+	fmt.Println("")
+	fmt.Printf(results.Comment)
+
+	//  "20161212", "dr", "lab", "app", "pcf-status", "pcf-status",  "app.crash", "crashed", "2 error(s) occurred:\n\n* 2 error(s) occurred:\n\n* Exited with status 255 (out of memory)\n* cancelled\n* 1 error(s) occurred:\n\n* cancelled"
+	//  "2016-12-09T21:44:46Z", "demo", "sandbox", "app", "test-nodejs", "admin", "app.update", "stopped", ""
+
+	fmt.Printf("%s,%s,%s,%s,%s,%s,%s,%s\n", "DATE", "ORG", "SPACE", "ACTEE-TYPE", "ACTEE-NAME", "ACTOR", "EVENT TYPE", "DETAILS")
+	for _, val := range results.Resources  {
+		var mdata = sanitize(fmt.Sprintf("%+v", val.Entity.Metadata))
+		fmt.Printf("%s,%s,%s,%s,%s,%s,%s,%s\n",
+			val.Entity.Timestamp, val.Entity.Org, val.Entity.Space,
+			val.Entity.ActeeType, val.Entity.ActeeName, val.Entity.ActorName, val.Entity.Type, mdata)
+	}
+
+}
+
+// prints the results as a json text to console
+func (c Events) EventsInJsonFormat(results OutputResults) {
+	var out bytes.Buffer
+	b, _ := json.Marshal(results)
+	err := json.Indent(&out, b, "", "\t")
+	if err != nil {
+		fmt.Println(" Recevied error formatting json output.")
+	} else {
+		fmt.Println(out.String())
+	}
+}
+
