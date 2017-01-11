@@ -50,8 +50,8 @@ func (c *Events) GetMetadata() plugin.PluginMetadata {
 		Name: "get-events",
 		Version: plugin.VersionType{
 			Major: 0,
-			Minor: 6,
-			Build: 0,
+			Minor: 5,
+			Build: 6,
 		},
 		Commands: []plugin.Command{
 			{
