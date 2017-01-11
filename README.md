@@ -71,7 +71,6 @@ $> date
 	Tue Jan 10 15:19:24 CST 2017
 ```
 
-
 ```
  $> cf get-events --today
 
